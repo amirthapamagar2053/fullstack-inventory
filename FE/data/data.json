@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "totalItems": 1248,
+    "lowStock": 24,
+    "maintenanceCount": 12
+  },
+  "inventory": [
+    {
+      "code": "INV-1042",
+      "name": "MacBook Pro 16\"",
+      "category": "Electronics",
+      "location": "Head Office",
+      "quantity": 15,
+      "amount": 37500,
+      "status": "Available"
+    },
+    {
+      "code": "INV-1043",
+      "name": "Ergonomic Chair",
+      "category": "Furniture",
+      "location": "Branch A",
+      "quantity": 42,
+      "amount": 12600,
+      "status": "In Use"
+    },
+    {
+      "code": "INV-1044",
+      "name": "Dell XPS 15",
+      "category": "Electronics",
+      "location": "Head Office",
+      "quantity": 8,
+      "amount": 16000,
+      "status": "Maintenance"
+    }
+  ]
+}

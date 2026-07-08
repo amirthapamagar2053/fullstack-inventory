@@ -1,0 +1,349 @@
+let inventoryData = {
+  summary: {
+    totalItems: 0,
+    lowStock: 0,
+    maintenanceCount: 0,
+  },
+  inventory: [],
+};
+
+let filteredInventory = [];
+let editingItemId = null;
+
+const LOW_STOCK_THRESHOLD = 5;
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function statusClass(status) {
+  const normalized = status.toLowerCase().replace(/\s+/g, "-");
+  return `status-${normalized}`;
+}
+
+function statusToDisplay(status) {
+  return status.replace(/_/g, " ");
+}
+
+function statusToEnum(status) {
+  return status.replace(/\s+/g, "_");
+}
+
+function iconSvg(path) {
+  return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+}
+
+function renderSummary(summary) {
+  const totalItems = document.getElementById("totalItems");
+  const lowStock = document.getElementById("lowStock");
+  const maintenanceCount = document.getElementById("maintenanceCount");
+
+  if (totalItems) totalItems.textContent = summary.totalItems.toLocaleString();
+  if (lowStock) lowStock.textContent = summary.lowStock.toLocaleString();
+  if (maintenanceCount) maintenanceCount.textContent = summary.maintenanceCount.toLocaleString();
+}
+
+function renderFilters() {
+  const categoryFilter = document.getElementById("categoryFilter");
+  const locationFilter = document.getElementById("locationFilter");
+  const categories = ["All Categories", ...new Set(inventoryData.inventory.map((item) => item.category))];
+  const locations = ["All Locations", ...new Set(inventoryData.inventory.map((item) => item.location))];
+
+  if (categoryFilter) {
+    const previous = categoryFilter.value || "All Categories";
+    categoryFilter.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+    if (categories.includes(previous)) categoryFilter.value = previous;
+  }
+
+  if (locationFilter) {
+    const previous = locationFilter.value || "All Locations";
+    locationFilter.innerHTML = locations.map((location) => `<option value="${escapeHtml(location)}">${escapeHtml(location)}</option>`).join("");
+    if (locations.includes(previous)) locationFilter.value = previous;
+  }
+}
+
+function renderTable(rows) {
+  const tableBody = document.getElementById("tableBody");
+  const tableFooter = document.getElementById("tableFooter");
+
+  if (!tableBody || !tableFooter) return;
+
+  if (!rows.length) {
+    tableBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No items match the current filters.</div></td></tr>`;
+    tableFooter.textContent = "Showing 0-0 of 0 records";
+    return;
+  }
+
+  tableBody.innerHTML = rows
+    .map((item) => {
+      return `
+        <tr>
+          <td>${escapeHtml(item.code)}</td>
+          <td class="item-name">${escapeHtml(item.name)}</td>
+          <td>${escapeHtml(item.category)}</td>
+          <td>${escapeHtml(item.quantity)}</td>
+          <td>${formatCurrency(item.amount)}</td>
+          <td><span class="status-chip ${statusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+          <td>
+            <div class="actions">
+              <button class="table-action edit" type="button" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}">
+                ${iconSvg("<path d='M3 11.5V13h1.5L12 5.5 10.5 4 3 11.5Z' /><path d='m9.7 4.3 2 2' />")}
+              </button>
+              <button class="table-action delete" type="button" data-id="${escapeHtml(item.id)}" aria-label="Delete ${escapeHtml(item.name)}">
+                ${iconSvg("<path d='M3.5 4.5h9' /><path d='M6 4.5V3.4h4V4.5' /><path d='M5.5 6v6' /><path d='M8 6v6' /><path d='M10.5 6v6' /><path d='M4.5 4.5l.6 8.5h5.8l.6-8.5' />")}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  tableFooter.textContent = `Showing 1-${rows.length} of ${rows.length} records`;
+}
+
+function applyFilters() {
+  const searchInput = document.getElementById("searchInput");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const locationFilter = document.getElementById("locationFilter");
+
+  const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
+  const categoryValue = categoryFilter ? categoryFilter.value : "All Categories";
+  const locationValue = locationFilter ? locationFilter.value : "All Locations";
+
+  filteredInventory = inventoryData.inventory.filter((item) => {
+    const matchesSearch =
+      !searchValue ||
+      [item.code, item.name, item.category, item.location, item.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(searchValue);
+
+    const matchesCategory = categoryValue === "All Categories" || item.category === categoryValue;
+    const matchesLocation = locationValue === "All Locations" || item.location === locationValue;
+
+    return matchesSearch && matchesCategory && matchesLocation;
+  });
+
+  renderTable(filteredInventory);
+}
+
+function findItemById(id) {
+  return inventoryData.inventory.find((item) => item.id === id);
+}
+
+async function downloadExport(format) {
+  try {
+    const { blob, filename } = await apiBlob(`/inventory/export?format=${format}`);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    alert(error.message || "Export failed.");
+  }
+}
+
+function setUserAvatar() {
+  const user = getSessionUser();
+  const avatar = document.getElementById("userAvatar");
+  if (!avatar || !user) return;
+  avatar.setAttribute("aria-label", `${user.name} (${user.role})`);
+  avatar.title = `${user.name} — ${user.email}`;
+}
+
+function openModal(mode, item) {
+  const overlay = document.getElementById("itemModalOverlay");
+  const title = document.getElementById("itemModalTitle");
+  const form = document.getElementById("itemForm");
+  const error = document.getElementById("itemModalError");
+
+  if (!overlay || !form) return;
+
+  editingItemId = mode === "edit" ? item.id : null;
+  title.textContent = mode === "edit" ? "Edit Inventory Item" : "New Inventory Item";
+  error.textContent = "";
+  form.reset();
+
+  if (mode === "edit" && item) {
+    form.itemName.value = item.name;
+    form.category.value = item.category;
+    form.purchaseDate.value = item.purchaseDate ? item.purchaseDate.slice(0, 10) : "";
+    form.quantity.value = item.quantity;
+    form.amount.value = item.amount;
+    form.location.value = item.location;
+    form.status.value = statusToEnum(item.status);
+  } else {
+    form.status.value = "Available";
+  }
+
+  overlay.hidden = false;
+}
+
+function closeModal() {
+  const overlay = document.getElementById("itemModalOverlay");
+  if (overlay) overlay.hidden = true;
+  editingItemId = null;
+}
+
+async function handleItemFormSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const error = document.getElementById("itemModalError");
+  const submitBtn = document.getElementById("itemModalSubmit");
+
+  const payload = {
+    itemName: form.itemName.value.trim(),
+    category: form.category.value.trim(),
+    purchaseDate: form.purchaseDate.value,
+    quantity: Number(form.quantity.value),
+    amount: form.amount.value,
+    location: form.location.value.trim(),
+    status: form.status.value,
+  };
+
+  submitBtn.disabled = true;
+  error.textContent = "";
+
+  try {
+    if (editingItemId) {
+      await apiJson(`/inventory/${editingItemId}`, { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      await apiJson("/inventory", { method: "POST", body: JSON.stringify(payload) });
+    }
+    closeModal();
+    await loadData();
+    renderFilters();
+    applyFilters();
+    renderSummary(inventoryData.summary);
+  } catch (err) {
+    error.textContent = err.message || "Unable to save item.";
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function handleDelete(id) {
+  const item = findItemById(id);
+  if (!item) return;
+  if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+
+  try {
+    await apiFetch(`/inventory/${id}`, { method: "DELETE" });
+    await loadData();
+    renderFilters();
+    applyFilters();
+    renderSummary(inventoryData.summary);
+  } catch (error) {
+    if (error.status === 403) {
+      alert("You do not have permission to delete items (admin role required).");
+    } else {
+      alert(error.message || "Unable to delete item.");
+    }
+  }
+}
+
+async function loadData() {
+  const response = await apiJson("/inventory?limit=1000");
+  const items = response.data.map((item) => ({
+    id: item.id,
+    code: item.itemCode,
+    name: item.itemName,
+    category: item.category,
+    location: item.location,
+    quantity: item.quantity,
+    amount: Number(item.amount),
+    status: statusToDisplay(item.status),
+    purchaseDate: item.purchaseDate,
+  }));
+
+  inventoryData = {
+    summary: {
+      totalItems: response.meta.total,
+      lowStock: items.filter((item) => item.quantity <= LOW_STOCK_THRESHOLD).length,
+      maintenanceCount: items.filter((item) => item.status === "Maintenance").length,
+    },
+    inventory: items,
+  };
+
+  filteredInventory = [...inventoryData.inventory];
+}
+
+function bindEvents() {
+  const searchInput = document.getElementById("searchInput");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const locationFilter = document.getElementById("locationFilter");
+  const exportExcelBtn = document.getElementById("exportExcelBtn");
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+  const newEntryBtn = document.getElementById("newEntryBtn");
+  const logoutLink = document.getElementById("logoutLink");
+  const tableBody = document.getElementById("tableBody");
+  const itemForm = document.getElementById("itemForm");
+  const itemModalClose = document.getElementById("itemModalClose");
+  const itemModalCancel = document.getElementById("itemModalCancel");
+  const itemModalOverlay = document.getElementById("itemModalOverlay");
+
+  searchInput?.addEventListener("input", applyFilters);
+  categoryFilter?.addEventListener("change", applyFilters);
+  locationFilter?.addEventListener("change", applyFilters);
+  exportExcelBtn?.addEventListener("click", () => downloadExport("xlsx"));
+  exportPdfBtn?.addEventListener("click", () => window.print());
+  newEntryBtn?.addEventListener("click", () => openModal("create"));
+  logoutLink?.addEventListener("click", (event) => {
+    event.preventDefault();
+    logout();
+  });
+
+  tableBody?.addEventListener("click", (event) => {
+    const editBtn = event.target.closest(".table-action.edit");
+    const deleteBtn = event.target.closest(".table-action.delete");
+    if (editBtn) {
+      const item = findItemById(editBtn.dataset.id);
+      if (item) openModal("edit", item);
+    } else if (deleteBtn) {
+      handleDelete(deleteBtn.dataset.id);
+    }
+  });
+
+  itemForm?.addEventListener("submit", handleItemFormSubmit);
+  itemModalClose?.addEventListener("click", closeModal);
+  itemModalCancel?.addEventListener("click", closeModal);
+  itemModalOverlay?.addEventListener("click", (event) => {
+    if (event.target === itemModalOverlay) closeModal();
+  });
+}
+
+async function renderApp() {
+  setUserAvatar();
+  bindEvents();
+  try {
+    await loadData();
+  } catch (error) {
+    console.error("Failed to load inventory from the API.", error);
+    inventoryData = { summary: { totalItems: 0, lowStock: 0, maintenanceCount: 0 }, inventory: [] };
+    filteredInventory = [];
+  }
+  renderSummary(inventoryData.summary);
+  renderFilters();
+  applyFilters();
+}
+
+document.addEventListener("componentsLoaded", async () => {
+  if (!requireAuthOrRedirect()) return;
+  await renderApp();
+});
