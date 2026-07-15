@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: inventory-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: BE
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod:migrate
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.0
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
