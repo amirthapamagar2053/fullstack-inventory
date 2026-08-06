@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ override: true });
+// Real environment variables (e.g. those injected by Render) take precedence over .env
+dotenv.config();
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';

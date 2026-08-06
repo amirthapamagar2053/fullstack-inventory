@@ -4,8 +4,10 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ExportModule } from './export/export.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [PrismaModule, AuthModule, UsersModule, ExportModule, InventoryModule],
+  controllers: [HealthController],
 })
 export class AppModule {}
