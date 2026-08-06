@@ -1,4 +1,7 @@
-const API_BASE_URL = "http://localhost:3001/api";
+// js/config.js sets window.INVENTORY_API_URL on deployed environments; it is
+// generated at build time from the backend's own hostname. Falls back to the
+// local API when running from a dev server.
+const API_BASE_URL = window.INVENTORY_API_URL || "http://localhost:3001/api";
 
 const SESSION_TOKEN_KEY = "inventoryPro.token";
 const SESSION_USER_KEY = "inventoryPro.user";

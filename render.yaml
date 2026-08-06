@@ -26,3 +26,15 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 24h
+
+  - type: web
+    name: inventory-ui
+    runtime: static
+    staticPublishPath: ./FE
+    buildCommand: printf "window.INVENTORY_API_URL = 'https://%s/api';\n" "$API_HOST" > FE/js/config.js
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: inventory-api
+          property: host
