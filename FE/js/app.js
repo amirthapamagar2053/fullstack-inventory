@@ -145,9 +145,26 @@ function findItemById(id) {
   return inventoryData.inventory.find((item) => item.id === id);
 }
 
+// The export endpoint accepts the same filters as the dashboard, so a download
+// contains exactly the rows currently on screen.
+function currentFilterParams() {
+  const search = document.getElementById("searchInput")?.value.trim();
+  const category = document.getElementById("categoryFilter")?.value;
+  const location = document.getElementById("locationFilter")?.value;
+
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (category && category !== "All Categories") params.set("category", category);
+  if (location && location !== "All Locations") params.set("location", location);
+  return params;
+}
+
 async function downloadExport(format) {
+  const params = currentFilterParams();
+  params.set("format", format);
+
   try {
-    const { blob, filename } = await apiBlob(`/inventory/export?format=${format}`);
+    const { blob, filename } = await apiBlob(`/inventory/export?${params}`);
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -227,14 +244,35 @@ async function handleItemFormSubmit(event) {
       await apiJson("/inventory", { method: "POST", body: JSON.stringify(payload) });
     }
     closeModal();
-    await loadData();
-    renderFilters();
-    applyFilters();
-    renderSummary(inventoryData.summary);
+    await refreshDashboard();
   } catch (err) {
     error.textContent = err.message || "Unable to save item.";
   } finally {
     submitBtn.disabled = false;
+  }
+}
+
+async function refreshDashboard() {
+  await loadData();
+  renderFilters();
+  applyFilters();
+  renderSummary(inventoryData.summary);
+}
+
+// Re-fetches the row before editing so the form shows current values even if
+// another user changed the item since this page loaded.
+async function handleEdit(id) {
+  try {
+    openModal("edit", mapItem(await apiJson(`/inventory/${id}`)));
+  } catch (error) {
+    if (error.status === 404) {
+      alert("That item no longer exists.");
+      await refreshDashboard();
+      return;
+    }
+    const cached = findItemById(id);
+    if (cached) openModal("edit", cached);
+    else alert(error.message || "Unable to load that item.");
   }
 }
 
@@ -245,10 +283,7 @@ async function handleDelete(id) {
 
   try {
     await apiFetch(`/inventory/${id}`, { method: "DELETE" });
-    await loadData();
-    renderFilters();
-    applyFilters();
-    renderSummary(inventoryData.summary);
+    await refreshDashboard();
   } catch (error) {
     if (error.status === 403) {
       alert("You do not have permission to delete items (admin role required).");
@@ -258,9 +293,8 @@ async function handleDelete(id) {
   }
 }
 
-async function loadData() {
-  const response = await apiJson("/inventory?limit=1000");
-  const items = response.data.map((item) => ({
+function mapItem(item) {
+  return {
     id: item.id,
     code: item.itemCode,
     name: item.itemName,
@@ -270,7 +304,12 @@ async function loadData() {
     amount: Number(item.amount),
     status: statusToDisplay(item.status),
     purchaseDate: item.purchaseDate,
-  }));
+  };
+}
+
+async function loadData() {
+  const response = await apiJson("/inventory?limit=1000");
+  const items = response.data.map(mapItem);
 
   inventoryData = {
     summary: {
@@ -289,6 +328,7 @@ function bindEvents() {
   const categoryFilter = document.getElementById("categoryFilter");
   const locationFilter = document.getElementById("locationFilter");
   const exportExcelBtn = document.getElementById("exportExcelBtn");
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
   const exportPdfBtn = document.getElementById("exportPdfBtn");
   const newEntryBtn = document.getElementById("newEntryBtn");
   const logoutLink = document.getElementById("logoutLink");
@@ -302,6 +342,7 @@ function bindEvents() {
   categoryFilter?.addEventListener("change", applyFilters);
   locationFilter?.addEventListener("change", applyFilters);
   exportExcelBtn?.addEventListener("click", () => downloadExport("xlsx"));
+  exportCsvBtn?.addEventListener("click", () => downloadExport("csv"));
   exportPdfBtn?.addEventListener("click", () => window.print());
   newEntryBtn?.addEventListener("click", () => openModal("create"));
   logoutLink?.addEventListener("click", (event) => {
@@ -313,8 +354,7 @@ function bindEvents() {
     const editBtn = event.target.closest(".table-action.edit");
     const deleteBtn = event.target.closest(".table-action.delete");
     if (editBtn) {
-      const item = findItemById(editBtn.dataset.id);
-      if (item) openModal("edit", item);
+      handleEdit(editBtn.dataset.id);
     } else if (deleteBtn) {
       handleDelete(deleteBtn.dataset.id);
     }
