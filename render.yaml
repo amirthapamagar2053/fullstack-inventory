@@ -26,6 +26,14 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 24h
+      # Initial admin login, created on first boot. Change these in the Render
+      # dashboard (and redeploy with a fresh database) for anything real.
+      - key: SEED_ADMIN_EMAIL
+        value: testuser@example.com
+      - key: SEED_ADMIN_PASSWORD
+        value: TestUser123!
+      - key: SEED_ADMIN_NAME
+        value: Test User
 
   - type: web
     name: inventory-ui
