@@ -39,7 +39,7 @@ services:
     name: inventory-ui
     runtime: static
     staticPublishPath: ./FE
-    buildCommand: printf "window.INVENTORY_API_URL = 'https://%s/api';\n" "$API_HOST" > FE/js/config.js
+    buildCommand: ./scripts/build-ui.sh
     envVars:
       - key: API_HOST
         fromService:
