@@ -61,6 +61,7 @@ async function loadComponent(id, file) {
     </div>
 
     <div class="dashboard-actions" id="dashboardActions">
+      <button class="add-btn" type="button" id="addItemBtn"><span class="btn-icon" aria-hidden="true">+</span><span>Add Item</span></button>
       <button class="export-btn" type="button" id="exportExcelBtn">Export Excel</button>
       <button class="export-btn" type="button" id="exportCsvBtn">Export CSV</button>
       <button class="export-btn" type="button" id="exportPdfBtn">Export PDF</button>

@@ -440,6 +440,7 @@ function bindEvents() {
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   const exportPdfBtn = document.getElementById("exportPdfBtn");
   const newEntryBtn = document.getElementById("newEntryBtn");
+  const addItemBtn = document.getElementById("addItemBtn");
   const logoutLink = document.getElementById("logoutLink");
   const tableBody = document.getElementById("tableBody");
   const itemForm = document.getElementById("itemForm");
@@ -454,6 +455,7 @@ function bindEvents() {
   exportCsvBtn?.addEventListener("click", () => downloadExport("csv"));
   exportPdfBtn?.addEventListener("click", () => window.print());
   newEntryBtn?.addEventListener("click", () => openModal("create"));
+  addItemBtn?.addEventListener("click", () => openModal("create"));
   logoutLink?.addEventListener("click", (event) => {
     event.preventDefault();
     logout();
