@@ -20,11 +20,11 @@ async function loadComponent(id, file) {
   </div>
 
   <nav class="sidebar-nav" aria-label="Primary">
-    <a href="#" class="nav-item active"><span class="nav-icon" aria-hidden="true">▦</span><span>Dashboard</span></a>
-    <a href="#" class="nav-item"><span class="nav-icon" aria-hidden="true">▣</span><span>Inventory</span></a>
-    <a href="#" class="nav-item"><span class="nav-icon" aria-hidden="true">↻</span><span>Orders</span></a>
-    <a href="#" class="nav-item"><span class="nav-icon" aria-hidden="true">◫</span><span>Suppliers</span></a>
-    <a href="#" class="nav-item"><span class="nav-icon" aria-hidden="true">▤</span><span>Reports</span></a>
+    <a href="#dashboard" class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">▦</span><span>Dashboard</span></a>
+    <a href="#inventory" class="nav-item" data-view="inventory"><span class="nav-icon" aria-hidden="true">▣</span><span>Inventory</span></a>
+    <a href="#orders" class="nav-item" data-view="orders"><span class="nav-icon" aria-hidden="true">↻</span><span>Orders</span></a>
+    <a href="#suppliers" class="nav-item" data-view="suppliers"><span class="nav-icon" aria-hidden="true">◫</span><span>Suppliers</span></a>
+    <a href="#reports" class="nav-item" data-view="reports"><span class="nav-icon" aria-hidden="true">▤</span><span>Reports</span></a>
   </nav>
 
   <div class="sidebar-spacer"></div>
@@ -32,7 +32,7 @@ async function loadComponent(id, file) {
   <button class="new-btn" type="button" id="newEntryBtn"><span class="btn-icon">+</span><span>New Entry</span></button>
 
   <div class="sidebar-footer">
-    <a href="#" class="footer-link"><span class="nav-icon" aria-hidden="true">?</span><span>Support</span></a>
+    <a href="#support" class="footer-link" data-view="support"><span class="nav-icon" aria-hidden="true">?</span><span>Support</span></a>
     <a href="#" class="footer-link" id="logoutLink"><span class="nav-icon" aria-hidden="true">↪</span><span>Logout</span></a>
   </div>
 </aside>`,
@@ -56,18 +56,18 @@ async function loadComponent(id, file) {
       content: `<main class="dashboard-page">
   <section class="dashboard-header">
     <div class="dashboard-title">
-      <h1>Inventory Dashboard</h1>
-      <p>Manage and track your company assets.</p>
+      <h1 id="dashboardTitle">Inventory Dashboard</h1>
+      <p id="dashboardSubtitle">Manage and track your company assets.</p>
     </div>
 
-    <div class="dashboard-actions">
+    <div class="dashboard-actions" id="dashboardActions">
       <button class="export-btn" type="button" id="exportExcelBtn">Export Excel</button>
       <button class="export-btn" type="button" id="exportCsvBtn">Export CSV</button>
       <button class="export-btn" type="button" id="exportPdfBtn">Export PDF</button>
     </div>
   </section>
 
-  <section class="summary-grid" aria-label="Inventory summary">
+  <section class="summary-grid" id="summaryGrid" aria-label="Inventory summary">
     <article class="summary-card">
       <div class="summary-label"><span class="summary-icon" aria-hidden="true">▢</span><span>Total Items</span></div>
       <div class="summary-value" id="totalItems">0</div>
@@ -82,7 +82,12 @@ async function loadComponent(id, file) {
     </article>
   </section>
 
-  <section class="table-card" aria-label="Inventory list">
+  <section class="placeholder-card" id="placeholderView" aria-live="polite" hidden>
+    <h2 id="placeholderTitle">Not available yet</h2>
+    <p id="placeholderText"></p>
+  </section>
+
+  <section class="table-card" id="tableCard" aria-label="Inventory list">
     <table class="inventory-table">
       <thead>
         <tr>

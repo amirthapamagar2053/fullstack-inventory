@@ -1,11 +1,11 @@
 <main class="dashboard-page">
   <section class="dashboard-header">
     <div class="dashboard-title">
-      <h1>Inventory Dashboard</h1>
-      <p>Manage and track your company assets.</p>
+      <h1 id="dashboardTitle">Inventory Dashboard</h1>
+      <p id="dashboardSubtitle">Manage and track your company assets.</p>
     </div>
 
-    <div class="dashboard-actions">
+    <div class="dashboard-actions" id="dashboardActions">
       <button class="export-btn" type="button" id="exportExcelBtn">
         <span aria-hidden="true">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -42,7 +42,7 @@
     </div>
   </section>
 
-  <section class="summary-grid" aria-label="Inventory summary">
+  <section class="summary-grid" id="summaryGrid" aria-label="Inventory summary">
     <article class="summary-card">
       <div class="summary-label">
         <span class="summary-icon" aria-hidden="true">
@@ -86,7 +86,12 @@
     </article>
   </section>
 
-  <section class="table-card" aria-label="Inventory list">
+  <section class="placeholder-card" id="placeholderView" aria-live="polite" hidden>
+    <h2 id="placeholderTitle">Not available yet</h2>
+    <p id="placeholderText"></p>
+  </section>
+
+  <section class="table-card" id="tableCard" aria-label="Inventory list">
     <table class="inventory-table">
       <thead>
         <tr>

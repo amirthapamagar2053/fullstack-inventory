@@ -252,6 +252,90 @@ async function handleItemFormSubmit(event) {
   }
 }
 
+// Each sidebar entry maps to a view. Orders and Suppliers have no API behind
+// them yet, so they show an explicit notice instead of a dead link.
+const VIEWS = {
+  dashboard: {
+    title: "Inventory Dashboard",
+    subtitle: "Manage and track your company assets.",
+    summary: true,
+    table: true,
+    actions: true,
+  },
+  inventory: {
+    title: "Inventory",
+    subtitle: "Every item on record. Use the filters above to narrow the list.",
+    summary: false,
+    table: true,
+    actions: true,
+  },
+  reports: {
+    title: "Reports",
+    subtitle: "Stock levels at a glance. Download the full data set below.",
+    summary: true,
+    table: false,
+    actions: true,
+  },
+  orders: {
+    title: "Orders",
+    subtitle: "",
+    placeholder: "Order tracking is not built yet — the API has no orders endpoint.",
+  },
+  suppliers: {
+    title: "Suppliers",
+    subtitle: "",
+    placeholder: "Supplier records are not built yet — the API has no suppliers endpoint.",
+  },
+  support: {
+    title: "Support",
+    subtitle: "",
+    placeholder: "Need help? Contact your administrator.",
+  },
+};
+
+let currentView = "dashboard";
+
+function setView(name) {
+  const view = VIEWS[name];
+  if (!view) return;
+  currentView = name;
+
+  document.querySelectorAll("#sidebar [data-view]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.view === name);
+  });
+
+  const show = (id, visible) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !visible;
+  };
+
+  show("summaryGrid", !!view.summary);
+  show("tableCard", !!view.table);
+  show("dashboardActions", !!view.actions);
+  show("placeholderView", !!view.placeholder);
+
+  const title = document.getElementById("dashboardTitle");
+  const subtitle = document.getElementById("dashboardSubtitle");
+  if (title) title.textContent = view.title;
+  if (subtitle) {
+    subtitle.textContent = view.subtitle;
+    subtitle.hidden = !view.subtitle;
+  }
+
+  if (view.placeholder) {
+    const pTitle = document.getElementById("placeholderTitle");
+    const pText = document.getElementById("placeholderText");
+    if (pTitle) pTitle.textContent = view.title;
+    if (pText) pText.textContent = view.placeholder;
+  }
+
+  // Search and filters only mean something where a table is visible.
+  const filters = document.querySelector(".header-filters");
+  const search = document.querySelector(".header-search");
+  if (filters) filters.hidden = !view.table;
+  if (search) search.hidden = !view.table;
+}
+
 async function refreshDashboard() {
   await loadData();
   renderFilters();
@@ -350,6 +434,13 @@ function bindEvents() {
     logout();
   });
 
+  document.getElementById("sidebar")?.addEventListener("click", (event) => {
+    const link = event.target.closest("[data-view]");
+    if (!link) return;
+    event.preventDefault();
+    setView(link.dataset.view);
+  });
+
   tableBody?.addEventListener("click", (event) => {
     const editBtn = event.target.closest(".table-action.edit");
     const deleteBtn = event.target.closest(".table-action.delete");
@@ -371,6 +462,8 @@ function bindEvents() {
 async function renderApp() {
   setUserAvatar();
   bindEvents();
+  // Honour a deep link like index.html#reports, else land on the dashboard.
+  setView(VIEWS[window.location.hash.slice(1)] ? window.location.hash.slice(1) : "dashboard");
   try {
     await loadData();
   } catch (error) {
