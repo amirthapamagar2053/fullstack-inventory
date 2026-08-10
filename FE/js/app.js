@@ -82,7 +82,22 @@ function renderTable(rows) {
   if (!tableBody || !tableFooter) return;
 
   if (!rows.length) {
-    tableBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No items match the current filters.</div></td></tr>`;
+    // An empty inventory and an over-filtered one need different offers: one
+    // needs a first item, the other needs the filters cleared.
+    const nothingAtAll = !inventoryData.inventory.length;
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <p>${nothingAtAll ? "No inventory items yet." : "No items match the current filters."}</p>
+            ${
+              nothingAtAll
+                ? `<button class="modal-btn primary" type="button" id="emptyAddBtn">Add your first item</button>`
+                : `<button class="modal-btn secondary" type="button" id="clearFiltersBtn">Clear filters</button>`
+            }
+          </div>
+        </td>
+      </tr>`;
     tableFooter.textContent = "Showing 0-0 of 0 records";
     return;
   }
@@ -139,6 +154,16 @@ function applyFilters() {
   });
 
   renderTable(filteredInventory);
+}
+
+function clearFilters() {
+  const search = document.getElementById("searchInput");
+  const category = document.getElementById("categoryFilter");
+  const location = document.getElementById("locationFilter");
+  if (search) search.value = "";
+  if (category) category.value = "All Categories";
+  if (location) location.value = "All Locations";
+  applyFilters();
 }
 
 function findItemById(id) {
@@ -448,6 +473,10 @@ function bindEvents() {
       handleEdit(editBtn.dataset.id);
     } else if (deleteBtn) {
       handleDelete(deleteBtn.dataset.id);
+    } else if (event.target.closest("#emptyAddBtn")) {
+      openModal("create");
+    } else if (event.target.closest("#clearFiltersBtn")) {
+      clearFilters();
     }
   });
 
