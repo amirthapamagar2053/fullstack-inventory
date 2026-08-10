@@ -4,6 +4,13 @@
   box-sizing: border-box;
 }
 
+/* The `hidden` attribute only sets display:none in the user-agent stylesheet,
+   so any author `display` rule silently beats it. Several panels the view
+   switcher hides are display:flex/grid, so this must win outright. */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --bg: #f4f6fc;
   --panel: #ffffff;

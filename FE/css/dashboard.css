@@ -29,6 +29,17 @@
   gap: 8px;
 }
 
+.load-error {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid #f0c2bd;
+  border-radius: 4px;
+  background: #fdf3f2;
+  color: #b4261f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Primary action, so it reads stronger than the export buttons beside it. */
 .add-btn {
   height: 24px;

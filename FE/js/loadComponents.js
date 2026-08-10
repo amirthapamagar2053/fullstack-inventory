@@ -83,6 +83,8 @@ async function loadComponent(id, file) {
     </article>
   </section>
 
+  <div class="load-error" id="loadError" role="alert" hidden></div>
+
   <section class="placeholder-card" id="placeholderView" aria-live="polite" hidden>
     <h2 id="placeholderTitle">Not available yet</h2>
     <p id="placeholderText"></p>

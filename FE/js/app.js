@@ -490,6 +490,13 @@ function bindEvents() {
   });
 }
 
+function showLoadError(message) {
+  const banner = document.getElementById("loadError");
+  if (!banner) return;
+  banner.textContent = message;
+  banner.hidden = !message;
+}
+
 async function renderApp() {
   setUserAvatar();
   bindEvents();
@@ -497,8 +504,12 @@ async function renderApp() {
   setView(VIEWS[window.location.hash.slice(1)] ? window.location.hash.slice(1) : "dashboard");
   try {
     await loadData();
+    showLoadError("");
   } catch (error) {
+    // Without this the dashboard just looks empty, which is indistinguishable
+    // from having no items.
     console.error("Failed to load inventory from the API.", error);
+    showLoadError(`Could not load inventory: ${error.message}`);
     inventoryData = { summary: { totalItems: 0, lowStock: 0, maintenanceCount: 0 }, inventory: [] };
     filteredInventory = [];
   }
