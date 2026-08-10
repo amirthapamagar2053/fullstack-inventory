@@ -215,7 +215,14 @@ function openModal(mode, item) {
   const form = document.getElementById("itemForm");
   const error = document.getElementById("itemModalError");
 
-  if (!overlay || !form) return;
+  // Returning silently here makes a click look like nothing happened at all,
+  // which is impossible to diagnose from the UI. Say what is missing.
+  if (!overlay || !form) {
+    const missing = [!overlay && "#itemModalOverlay", !form && "#itemForm"].filter(Boolean).join(", ");
+    console.error(`Cannot open the item form: ${missing} not found in the page.`);
+    showLoadError(`Could not open the item form (missing ${missing}). Try reloading the page.`);
+    return;
+  }
 
   editingItemId = mode === "edit" ? item.id : null;
   title.textContent = mode === "edit" ? "Edit Inventory Item" : "New Inventory Item";
@@ -439,8 +446,6 @@ function bindEvents() {
   const exportExcelBtn = document.getElementById("exportExcelBtn");
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   const exportPdfBtn = document.getElementById("exportPdfBtn");
-  const newEntryBtn = document.getElementById("newEntryBtn");
-  const addItemBtn = document.getElementById("addItemBtn");
   const logoutLink = document.getElementById("logoutLink");
   const tableBody = document.getElementById("tableBody");
   const itemForm = document.getElementById("itemForm");
@@ -454,8 +459,14 @@ function bindEvents() {
   exportExcelBtn?.addEventListener("click", () => downloadExport("xlsx"));
   exportCsvBtn?.addEventListener("click", () => downloadExport("csv"));
   exportPdfBtn?.addEventListener("click", () => window.print());
-  newEntryBtn?.addEventListener("click", () => openModal("create"));
-  addItemBtn?.addEventListener("click", () => openModal("create"));
+  // Delegated from document so every "add" entry point works no matter when its
+  // markup was injected, and keeps working if a panel is re-rendered.
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("#addItemBtn, #newEntryBtn, #emptyAddBtn")) {
+      event.preventDefault();
+      openModal("create");
+    }
+  });
   logoutLink?.addEventListener("click", (event) => {
     event.preventDefault();
     logout();
@@ -475,8 +486,6 @@ function bindEvents() {
       handleEdit(editBtn.dataset.id);
     } else if (deleteBtn) {
       handleDelete(deleteBtn.dataset.id);
-    } else if (event.target.closest("#emptyAddBtn")) {
-      openModal("create");
     } else if (event.target.closest("#clearFiltersBtn")) {
       clearFilters();
     }
