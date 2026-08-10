@@ -4,7 +4,9 @@ async function loadComponent(id, file) {
   if (!target) return;
 
   try {
-    const response = await fetch(file);
+    // Same version stamp as the scripts, so component HTML can never be served
+    // from cache while the JS that drives it is fresh.
+    const response = await fetch(`${file}?v=${window.ASSET_VERSION || "dev"}`);
 
     if (!response.ok) {
       throw new Error(`Failed to load ${file}`);
