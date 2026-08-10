@@ -527,7 +527,15 @@ async function renderApp() {
   applyFilters();
 }
 
-document.addEventListener("componentsLoaded", async () => {
+// Markup is inline in index.html, so there is nothing to fetch first. Guard
+// on readyState too, in case this script runs after parsing has finished.
+async function boot() {
   if (!requireAuthOrRedirect()) return;
   await renderApp();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
